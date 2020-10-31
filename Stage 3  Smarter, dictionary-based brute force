@@ -1,0 +1,42 @@
+import sys
+import socket
+import itertools
+
+i = 1
+
+# first, have to open file
+file_path = f'D:/Hanshin/Python FLAG/passwords.txt'
+pw_combi = open(file_path, 'r')
+# receive from cmd
+args = sys.argv
+address = (args[1], int(args[2]))
+# build socket
+with socket.socket() as client_socket:
+    client_socket.connect(address)
+    # try every password I can...
+    while i:
+        i += 1
+        attempt = pw_combi.readline().strip()
+        password_generator = itertools.product(*([letter.lower(), letter.upper()] for letter in attempt))
+        # send encoded password
+        while True:
+            try:
+                pw_joined = ''.join(next(password_generator))
+            except StopIteration:
+                break
+            else:
+                pw_encoded = pw_joined.encode()
+                client_socket.send(pw_encoded)
+                # check response
+                response = client_socket.recv(1024)
+                the_response = response.decode()
+                if the_response == 'Connection success!':
+                    print(pw_joined)
+                    # finally close
+                    client_socket.close()
+                    exit()
+                elif the_response == 'Wrong password!':
+                    pass
+                elif the_response == 'Too many attempts':
+                    client_socket.close()
+                    exit()
